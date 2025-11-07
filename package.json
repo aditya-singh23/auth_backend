@@ -1,0 +1,75 @@
+{
+  "name": "basic-auth-backend",
+  "version": "1.0.0",
+  "description": "Backend API for basic authentication system",
+  "main": "dist/App.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node -r tsconfig-paths/register dist/App.js",
+    "dev": "ts-node-dev --respawn --transpile-only -r tsconfig-paths/register src/App.ts",
+    "dev:watch": "nodemon --exec ts-node -r tsconfig-paths/register src/App.ts",
+    "lint": "prettier --check \"src/**/*.ts\" \"prisma/**/*.ts\"",
+    "lint:fix": "prettier --write \"src/**/*.ts\" \"prisma/**/*.ts\"",
+    "format": "prettier --write \"src/**/*.{ts,js,json}\" \"prisma/**/*.{ts,js,json}\" \"*.{ts,js,json}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,js,json}\" \"prisma/**/*.{ts,js,json}\" \"*.{ts,js,json}\"",
+    "prepare": "husky install",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio",
+    "clean": "rimraf dist",
+    "prebuild": "npm run clean",
+    "postbuild": "npm run db:generate"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.1.4",
+    "express": "^4.18.2",
+    "express-session": "^1.17.3",
+    "google-auth-library": "^9.4.1",
+    "joi": "^17.9.2",
+    "jsonwebtoken": "^9.0.0",
+    "nodemailer": "^6.9.3",
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
+    "pg": "^8.11.3",
+    "tsconfig-paths": "^4.2.0"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.4",
+    "@types/cors": "^2.8.15",
+    "@types/express": "^4.17.20",
+    "@types/express-session": "^1.17.9",
+    "@types/jsonwebtoken": "^9.0.4",
+    "@types/node": "^20.8.0",
+    "@types/nodemailer": "^6.4.13",
+    "@types/passport": "^1.0.14",
+    "@types/passport-google-oauth20": "^2.0.13",
+    "husky": "^8.0.3",
+    "lint-staged": "^16.2.6",
+    "nodemon": "^3.0.1",
+    "prettier": "^3.6.2",
+    "prisma": "^5.6.0",
+    "rimraf": "^5.0.5",
+    "ts-node": "^10.9.1",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.2.2"
+  },
+  "keywords": [
+    "auth",
+    "api",
+    "express",
+    "node",
+    "typescript"
+  ],
+  "author": "",
+  "license": "MIT",
+  "lint-staged": {
+    "*.{ts,js,json}": [
+      "prettier --write",
+      "git add"
+    ]
+  }
+}

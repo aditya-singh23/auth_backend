@@ -1,0 +1,110 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// ====================================================================
+// PRISMA CONFIGURATION
+// ====================================================================
+// This section configures Prisma client generation and database connection
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ====================================================================
+// USER MODEL - This defines the structure of the users table in PostgreSQL
+// ====================================================================
+// This model replaces the JSON file storage with a proper database table
+// Each field corresponds to a column in the PostgreSQL users table
+
+model User {
+  // PRIMARY KEY - Unique identifier for each user
+  // @id marks this as the primary key
+  // @default(autoincrement()) automatically generates sequential IDs (1, 2, 3, etc.)
+  id        Int      @id @default(autoincrement())
+  
+  // USER BASIC INFORMATION
+  // String means text data, @db.VarChar(100) limits name to 100 characters
+  name      String   @db.VarChar(100)
+  
+  // @unique ensures no two users can have the same email
+  // @db.VarChar(255) allows for longer email addresses
+  email     String   @unique @db.VarChar(255)
+  
+  // Password field to store hashed passwords
+  // @db.VarChar(255) provides enough space for bcrypt hashes
+  // Made optional for OAuth users who don't have passwords
+  password  String?   @db.VarChar(255)
+  
+  // TIMESTAMPS
+  // DateTime stores date and time information
+  // @default(now()) automatically sets the current timestamp when user is created
+  createdAt DateTime @default(now())
+  
+  // @updatedAt automatically updates this field whenever the record is modified
+  updatedAt DateTime @updatedAt
+  
+  // PASSWORD RESET FIELDS
+  // These fields handle the OTP-based password reset functionality
+  // String? means this field is optional (nullable)
+  
+  // Stores the 6-digit OTP code for password reset
+  resetOTP     String?   @db.VarChar(6)
+  
+  // Stores when the OTP was created (for tracking purposes)
+  otpCreatedAt DateTime?
+  
+  // Stores when the OTP expires (10 minutes from creation)
+  otpExpiresAt DateTime?
+  
+  // Stores when the password was last updated (for security auditing)
+  passwordUpdatedAt DateTime?
+
+  // OAUTH FIELDS
+  // These fields handle Google OAuth authentication
+  
+  // Google user ID from OAuth (unique identifier from Google)
+  googleId      String?   @unique @db.VarChar(100)
+  
+  // OAuth provider name (e.g., "google", "facebook", etc.)
+  provider      String?   @db.VarChar(50)
+  
+  // URL to user's profile picture from OAuth provider
+  profilePicture String?  @db.VarChar(500)
+  
+  // Whether the user's email is verified by the OAuth provider
+  emailVerified Boolean   @default(false)
+
+  // TABLE CONFIGURATION
+  // @@map("users") sets the actual table name in PostgreSQL to "users"
+  // This is optional but follows common naming conventions
+  @@map("users")
+}
+
+// ====================================================================
+// FUTURE MODELS - You can add more models here as your app grows
+// ====================================================================
+// Examples of models you might add later:
+//
+// model Session {
+//   id        String   @id @default(cuid())
+//   userId    Int
+//   token     String   @unique
+//   expiresAt DateTime
+//   createdAt DateTime @default(now())
+//   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+//   @@map("sessions")
+// }
+//
+// model UserProfile {
+//   id       Int     @id @default(autoincrement())
+//   userId   Int     @unique
+//   bio      String?
+//   avatar   String?
+//   user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+//   @@map("user_profiles")
+// }
