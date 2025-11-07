@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import express, { Request, Response, NextFunction, Router } from 'express';
 import passport from 'passport';
 import jwt from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
@@ -108,7 +108,7 @@ router.get(
   }),
   async (req, res) => {
     try {
-      const user = req.user as any;
+      const user = req.user;
 
       console.log('✅ Google OAuth Success for user:', user?.email);
 
@@ -131,11 +131,11 @@ router.get(
         id: user.id,
         name: user.name,
         email: user.email,
-        profilePicture: user.profilePicture,
+        profilePicture: user.profilePicture || null,
         provider: user.provider,
-        emailVerified: user.emailVerified,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
+        emailVerified: user.emailVerified ?? true, // Google OAuth users are email verified
+        createdAt: user.createdAt || new Date().toISOString(),
+        updatedAt: user.updatedAt || new Date().toISOString(),
       };
 
       // Redirect to frontend with token and user data
@@ -214,6 +214,14 @@ router.post('/google/success', async (req, res) => {
       photos: profilePicture ? [{ value: profilePicture }] : [],
     });
 
+    if (!user) {
+      const response: ApiResponse = {
+        success: false,
+        message: 'Failed to create or find user',
+      };
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(response);
+    }
+
     // Generate JWT token
     const token = generateToken(
       {
@@ -225,7 +233,10 @@ router.post('/google/success', async (req, res) => {
     );
 
     // Return success response
-    const response: ApiResponse = {
+    const response: ApiResponse<{
+      user: Record<string, string | number | boolean | null>;
+      token: string;
+    }> = {
       success: true,
       message: RESPONSE_MESSAGES.OAUTH_SUCCESS,
       data: {
@@ -233,11 +244,11 @@ router.post('/google/success', async (req, res) => {
           id: user.id,
           name: user.name,
           email: user.email,
-          profilePicture: user.profilePicture,
+          profilePicture: user.profilePicture || null,
           provider: user.provider,
-          emailVerified: user.emailVerified,
-          createdAt: user.createdAt,
-          updatedAt: user.updatedAt,
+          emailVerified: user.emailVerified ?? true, // Google OAuth users are email verified
+          createdAt: user.createdAt || new Date().toISOString(),
+          updatedAt: user.updatedAt || new Date().toISOString(),
         },
         token: token,
       },
@@ -287,10 +298,15 @@ router.get('/oauth/status', (req, res) => {
 /**
  * Handle OAuth-specific errors
  */
-router.use((error: any, req: any, res: any, next: any) => {
+router.use((error: Error, req: Request, res: Response, next: NextFunction) => {
   console.error('OAuth Route Error:', error);
 
-  if (error.name === 'GoogleOAuthError') {
+  // Type guard for error objects
+  const isErrorWithName = (err: Error): err is Error & { name: string; message: string } => {
+    return typeof err === 'object' && err !== null && 'name' in err && 'message' in err;
+  };
+
+  if (isErrorWithName(error) && error.name === 'GoogleOAuthError') {
     const response: ApiResponse = {
       success: false,
       message: RESPONSE_MESSAGES.OAUTH_FAILED,
@@ -299,14 +315,13 @@ router.use((error: any, req: any, res: any, next: any) => {
     return res.status(HTTP_STATUS.BAD_REQUEST).json(response);
   }
 
-  // Generic error response
+  // Default error response
   const response: ApiResponse = {
     success: false,
-    message: 'OAuth authentication error',
-    error: appSettings.nodeEnv === 'development' ? error.message : 'Internal server error',
+    message: RESPONSE_MESSAGES.SERVER_ERROR,
+    error: isErrorWithName(error) ? error.message : 'Unknown error occurred',
   };
-
-  res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(response);
+  return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(response);
 });
 
 export default router;

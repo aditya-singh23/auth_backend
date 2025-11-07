@@ -75,6 +75,9 @@ export const appSettings = {
   frontend: {
     url: envConfig.get('FRONTEND_URL'),
   },
+
+  // AI Configuration
+  geminiApiKey: process.env.GEMINI_API_KEY || envConfig.get('GEMINI_API_KEY'),
 };
 
 export default appSettings;

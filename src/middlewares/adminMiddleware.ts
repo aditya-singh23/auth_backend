@@ -34,7 +34,7 @@ const ADMIN_EMAILS = getAdminEmails();
 export const requireAdmin = (req: Request, res: Response, next: NextFunction): void => {
   try {
     // Check if user is authenticated (should be set by authenticateToken middleware)
-    const user = (req as any).user;
+    const user = req.user;
 
     if (!user) {
       const response: ApiResponse = {

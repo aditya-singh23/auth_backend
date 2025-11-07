@@ -65,7 +65,7 @@ export interface FileUpload {
 // Database query types
 export interface QueryOptions {
   select?: string[];
-  where?: Record<string, any>;
+  where?: Record<string, string | number | boolean | Date | null>;
   orderBy?: Record<string, 'asc' | 'desc'>;
   include?: string[];
   limit?: number;
@@ -77,7 +77,7 @@ export interface ValidationError {
   field: string;
   message: string;
   code: string;
-  value?: any;
+  value?: string | number | boolean;
 }
 
 // JWT payload extension
@@ -95,6 +95,18 @@ declare global {
   namespace Express {
     interface Request {
       context?: RequestContext;
+    }
+
+    interface User {
+      id: number;
+      email: string;
+      name: string;
+      provider: AuthProvider | null;
+      role?: UserRole;
+      profilePicture?: string;
+      emailVerified?: boolean;
+      createdAt?: string;
+      updatedAt?: string;
     }
   }
 }

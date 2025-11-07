@@ -53,8 +53,8 @@ export const isValidUrl = (url: string): boolean => {
 /**
  * Check if value is a valid positive integer
  */
-export const isPositiveInteger = (value: any): boolean => {
-  return Number.isInteger(value) && value > 0;
+export const isPositiveInteger = (value: string | number): boolean => {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0;
 };
 
 /**

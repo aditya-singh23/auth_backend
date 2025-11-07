@@ -17,6 +17,8 @@ interface EnvironmentConfig {
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;
   GOOGLE_CALLBACK_URL?: string;
+  ADMIN_EMAILS?: string;
+  GEMINI_API_KEY?: string;
 }
 
 class EnvConfigLoader {
@@ -52,14 +54,17 @@ class EnvConfigLoader {
     }
   }
 
-  private processEnvironmentVariables(config: any): any {
-    const processed: any = {};
+  private processEnvironmentVariables(
+    config: Record<string, string | number | undefined>
+  ): Record<string, string | number | undefined> {
+    const processed: Record<string, string | number | undefined> = {};
 
     for (const [key, value] of Object.entries(config)) {
       if (typeof value === 'string' && value.startsWith('${') && value.endsWith('}')) {
         // Extract variable name from ${VAR_NAME}
         const envVar = value.slice(2, -1);
-        processed[key] = process.env[envVar] || value;
+        const envValue = process.env[envVar];
+        processed[key] = envValue || value;
       } else {
         processed[key] = value;
       }
@@ -96,6 +101,8 @@ class EnvConfigLoader {
       config.GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
     if (process.env.GOOGLE_CALLBACK_URL)
       config.GOOGLE_CALLBACK_URL = process.env.GOOGLE_CALLBACK_URL;
+    if (process.env.ADMIN_EMAILS) config.ADMIN_EMAILS = process.env.ADMIN_EMAILS;
+    if (process.env.GEMINI_API_KEY) config.GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
     console.log('🔍 Final config Google OAuth check:', {
       clientId: config.GOOGLE_CLIENT_ID ? 'SET' : 'MISSING',
@@ -106,29 +113,58 @@ class EnvConfigLoader {
     return config;
   }
 
-  private validateAndTransformConfig(config: any): EnvironmentConfig {
+  private validateAndTransformConfig(
+    config: Record<string, string | number | undefined>
+  ): EnvironmentConfig {
     const validated: EnvironmentConfig = {
-      PORT: typeof config.PORT === 'string' ? parseInt(config.PORT, 10) : config.PORT || 5000,
-      NODE_ENV: config.NODE_ENV || 'development',
-      JWT_SECRET: config.JWT_SECRET || 'fallback-jwt-secret-change-in-production',
-      SESSION_SECRET: config.SESSION_SECRET || 'fallback-session-secret',
-      FRONTEND_URL: config.FRONTEND_URL || 'http://localhost:3000',
-      DATABASE_URL: config.DATABASE_URL || '',
+      PORT:
+        typeof config.PORT === 'string'
+          ? parseInt(config.PORT, 10)
+          : typeof config.PORT === 'number'
+            ? config.PORT
+            : 5000,
+      NODE_ENV: typeof config.NODE_ENV === 'string' ? config.NODE_ENV : 'development',
+      JWT_SECRET:
+        typeof config.JWT_SECRET === 'string'
+          ? config.JWT_SECRET
+          : 'fallback-jwt-secret-change-in-production',
+      SESSION_SECRET:
+        typeof config.SESSION_SECRET === 'string'
+          ? config.SESSION_SECRET
+          : 'fallback-session-secret',
+      FRONTEND_URL:
+        typeof config.FRONTEND_URL === 'string' ? config.FRONTEND_URL : 'http://localhost:3000',
+      DATABASE_URL: typeof config.DATABASE_URL === 'string' ? config.DATABASE_URL : '',
     };
 
-    // Add optional fields if they exist
-    if (config.EMAIL_SERVICE) validated.EMAIL_SERVICE = config.EMAIL_SERVICE;
-    if (config.EMAIL_HOST) validated.EMAIL_HOST = config.EMAIL_HOST;
-    if (config.EMAIL_PORT)
-      validated.EMAIL_PORT =
-        typeof config.EMAIL_PORT === 'string' ? parseInt(config.EMAIL_PORT, 10) : config.EMAIL_PORT;
+    // Add optional fields if they exist with proper type checking
+    if (typeof config.EMAIL_SERVICE === 'string') validated.EMAIL_SERVICE = config.EMAIL_SERVICE;
+    if (typeof config.EMAIL_HOST === 'string') validated.EMAIL_HOST = config.EMAIL_HOST;
+    if (config.EMAIL_PORT !== undefined) {
+      const port =
+        typeof config.EMAIL_PORT === 'string'
+          ? parseInt(config.EMAIL_PORT, 10)
+          : typeof config.EMAIL_PORT === 'number'
+            ? config.EMAIL_PORT
+            : null;
+      if (port !== null && !isNaN(port)) {
+        validated.EMAIL_PORT = port;
+      }
+    }
     if (config.EMAIL_SECURE !== undefined)
-      validated.EMAIL_SECURE = config.EMAIL_SECURE === 'true' || config.EMAIL_SECURE === true;
-    if (config.EMAIL_USER) validated.EMAIL_USER = config.EMAIL_USER;
-    if (config.EMAIL_PASS) validated.EMAIL_PASS = config.EMAIL_PASS;
-    if (config.GOOGLE_CLIENT_ID) validated.GOOGLE_CLIENT_ID = config.GOOGLE_CLIENT_ID;
-    if (config.GOOGLE_CLIENT_SECRET) validated.GOOGLE_CLIENT_SECRET = config.GOOGLE_CLIENT_SECRET;
-    if (config.GOOGLE_CALLBACK_URL) validated.GOOGLE_CALLBACK_URL = config.GOOGLE_CALLBACK_URL;
+      validated.EMAIL_SECURE =
+        config.EMAIL_SECURE === 'true' ||
+        (typeof config.EMAIL_SECURE === 'boolean' && config.EMAIL_SECURE);
+    if (typeof config.EMAIL_USER === 'string') validated.EMAIL_USER = config.EMAIL_USER;
+    if (typeof config.EMAIL_PASS === 'string') validated.EMAIL_PASS = config.EMAIL_PASS;
+    if (typeof config.GOOGLE_CLIENT_ID === 'string')
+      validated.GOOGLE_CLIENT_ID = config.GOOGLE_CLIENT_ID;
+    if (typeof config.GOOGLE_CLIENT_SECRET === 'string')
+      validated.GOOGLE_CLIENT_SECRET = config.GOOGLE_CLIENT_SECRET;
+    if (typeof config.GOOGLE_CALLBACK_URL === 'string')
+      validated.GOOGLE_CALLBACK_URL = config.GOOGLE_CALLBACK_URL;
+    if (typeof config.ADMIN_EMAILS === 'string') validated.ADMIN_EMAILS = config.ADMIN_EMAILS;
+    if (typeof config.GEMINI_API_KEY === 'string') validated.GEMINI_API_KEY = config.GEMINI_API_KEY;
 
     return validated;
   }

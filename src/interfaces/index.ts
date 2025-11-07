@@ -72,7 +72,7 @@ export interface JWTOptions {
 }
 
 // API Response Interfaces
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = Record<string, string | number | boolean> | string | number> {
   success: boolean;
   message: string;
   data?: T;

@@ -9,13 +9,15 @@ import { HTTP_STATUS, RESPONSE_MESSAGES } from '@utils/constants';
 /**
  * Create a success response
  */
-export const createSuccessResponse = (
+export const createSuccessResponse = <
+  T = Record<string, string | number | boolean> | string | number,
+>(
   message: string = RESPONSE_MESSAGES.SUCCESS,
-  data?: any
+  data?: T
 ): ApiResponse => ({
   success: true,
   message,
-  ...(data && { data }),
+  ...(data !== undefined && { data }),
 });
 
 /**
@@ -43,8 +45,8 @@ export const createValidationErrorResponse = (errors: string[]): ApiResponse => 
 /**
  * Create a paginated response
  */
-export const createPaginatedResponse = (
-  data: any[],
+export const createPaginatedResponse = <T = Record<string, string | number | boolean>>(
+  data: T[],
   page: number,
   limit: number,
   total: number,

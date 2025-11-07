@@ -11,7 +11,44 @@ import { GoogleProfile, User } from '@interfaces/index';
  * It handles the OAuth flow and user creation/authentication
  */
 
+type AuthProvider = 'local' | 'google';
+
 const prisma = dbConnection.getClient();
+
+/**
+ * Helper function to safely convert database user to Express User
+ */
+function mapDbUserToExpressUser(
+  dbUser: Record<string, string | number | boolean | Date | null>
+): Express.User | null {
+  if (!dbUser || typeof dbUser !== 'object') return null;
+
+  const user = dbUser as Record<string, string | number | boolean | Date | null>;
+
+  // Type guards for required fields
+  if (
+    typeof user.id !== 'number' ||
+    typeof user.email !== 'string' ||
+    typeof user.name !== 'string'
+  ) {
+    return null;
+  }
+
+  // Safely convert provider string to AuthProvider type with validation
+  let provider: AuthProvider | null = null;
+  if (typeof user.provider === 'string') {
+    if (user.provider === 'local' || user.provider === 'google') {
+      provider = user.provider as AuthProvider;
+    }
+  }
+
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    provider: provider,
+  };
+}
 
 // ====================================================================
 // PASSPORT CONFIGURATION
@@ -19,7 +56,7 @@ const prisma = dbConnection.getClient();
 
 // Serialize user for session storage
 // This determines what data is stored in the session
-passport.serializeUser((user: any, done) => {
+passport.serializeUser((user: Express.User, done) => {
   // Store only the user ID in the session for security
   done(null, user.id);
 });
@@ -43,7 +80,8 @@ passport.deserializeUser(async (id: number, done) => {
       },
     });
 
-    done(null, user);
+    const mappedUser = user ? mapDbUserToExpressUser(user) : null;
+    done(null, mappedUser);
   } catch (error) {
     console.error('Error deserializing user:', error);
     done(error, null);
@@ -123,7 +161,8 @@ passport.use(
             },
           });
 
-          return done(null, user);
+          const mappedUser = mapDbUserToExpressUser(user);
+          return done(null, mappedUser || false);
         }
 
         // Check if user exists by email (from regular signup)
@@ -146,7 +185,8 @@ passport.use(
             },
           });
 
-          return done(null, user);
+          const mappedUser2 = mapDbUserToExpressUser(user);
+          return done(null, mappedUser2 || false);
         }
 
         // Create new user with Google OAuth
@@ -165,7 +205,8 @@ passport.use(
         });
 
         console.log('✅ New Google user created:', user.email);
-        return done(null, user);
+        const mappedUser3 = mapDbUserToExpressUser(user);
+        return done(null, mappedUser3 || false);
       } catch (error) {
         console.error('❌ Google OAuth Error:', error);
         return done(error, false);
@@ -191,7 +232,9 @@ if (clientId && clientSecret && callbackUrl) {
  * Function to find or create user from Google profile
  * This function is kept separate for potential reuse or testing
  */
-export const findOrCreateGoogleUser = async (profile: GoogleProfile): Promise<any> => {
+export const findOrCreateGoogleUser = async (
+  profile: GoogleProfile
+): Promise<Express.User | null> => {
   const googleId = profile.id;
   const email = profile.emails?.[0]?.value;
   const name = profile.displayName;
@@ -240,7 +283,7 @@ export const findOrCreateGoogleUser = async (profile: GoogleProfile): Promise<an
       }
     }
 
-    return user;
+    return mapDbUserToExpressUser(user);
   } catch (error) {
     console.error('Error in findOrCreateGoogleUser:', error);
     throw error;
